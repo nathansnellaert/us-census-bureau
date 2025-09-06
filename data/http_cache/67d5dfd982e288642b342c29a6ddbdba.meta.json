@@ -1,0 +1,24 @@
+{
+  "status_code": 200,
+  "headers": {
+    "cache-control": "private",
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET,POST,OPTIONS",
+    "access-control-allow-headers": "Origin, X-Requested-With, Content-Type, Accept",
+    "referrer-policy": "same-origin",
+    "content-security-policy": "default-src 'self'; img-src 'self' data:; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; upgrade-insecure-requests; block-all-mixed-content",
+    "x-content-type-options": "nosniff",
+    "content-encoding": "gzip",
+    "vary": "Accept-Encoding,User-Agent",
+    "content-type": "application/json;charset=utf-8",
+    "content-length": "80180",
+    "date": "Sun, 31 Aug 2025 04:03:49 GMT",
+    "keep-alive": "timeout=20",
+    "connection": "keep-alive",
+    "strict-transport-security": "max-age=31536000",
+    "set-cookie": "TS010383f0=01283c52a46215344fc6e583f687f5c91cdccd19585e4fab71832fc42cd8461066d998490fd97439319059458418799d9cd75c09c7; Path=/; Domain=.api.census.gov; Secure; HttpOnly;"
+  },
+  "url": "http://api.census.gov/data/2023/acs/acs1/cprofile/variables.json",
+  "method": "GET",
+  "cached_at": "2025-08-31T13:03:49.172237"
+}

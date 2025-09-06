@@ -1,0 +1,23 @@
+{
+  "status_code": 200,
+  "headers": {
+    "cache-control": "private",
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET,POST,OPTIONS",
+    "access-control-allow-headers": "Origin, X-Requested-With, Content-Type, Accept",
+    "referrer-policy": "same-origin",
+    "content-security-policy": "default-src 'self'; img-src 'self' data:; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; upgrade-insecure-requests; block-all-mixed-content",
+    "x-content-type-options": "nosniff",
+    "content-encoding": "gzip",
+    "vary": "Accept-Encoding,User-Agent",
+    "content-type": "application/json;charset=utf-8",
+    "content-length": "80269",
+    "date": "Sun, 31 Aug 2025 04:03:57 GMT",
+    "keep-alive": "timeout=20",
+    "connection": "keep-alive",
+    "strict-transport-security": "max-age=31536000"
+  },
+  "url": "http://api.census.gov/data/2023/acs/acs1/pums/variables.json",
+  "method": "GET",
+  "cached_at": "2025-08-31T13:03:57.218292"
+}

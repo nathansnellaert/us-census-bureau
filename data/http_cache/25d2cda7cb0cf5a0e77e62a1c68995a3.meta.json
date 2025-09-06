@@ -1,0 +1,22 @@
+{
+  "status_code": 200,
+  "headers": {
+    "cache-control": "private",
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET,POST,OPTIONS",
+    "access-control-allow-headers": "Origin, X-Requested-With, Content-Type, Accept",
+    "referrer-policy": "same-origin",
+    "content-security-policy": "default-src 'self'; img-src 'self' data:; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; upgrade-insecure-requests; block-all-mixed-content",
+    "x-content-type-options": "nosniff",
+    "content-type": "application/json;charset=utf-8",
+    "date": "Sun, 31 Aug 2025 04:01:45 GMT",
+    "keep-alive": "timeout=20",
+    "connection": "keep-alive",
+    "strict-transport-security": "max-age=31536000",
+    "set-cookie": "TS010383f0=01283c52a4f36e2bdc60d0ab070e7d65fa5f5fa973eb98e656962d92b9589ea30ab76e1cbbed166f907dbfc5b15f3e35b4c83b55e7; Path=/; Domain=.api.census.gov; Secure; HttpOnly;",
+    "transfer-encoding": "chunked"
+  },
+  "url": "https://api.census.gov/data.json",
+  "method": "GET",
+  "cached_at": "2025-08-31T13:03:20.394535"
+}
