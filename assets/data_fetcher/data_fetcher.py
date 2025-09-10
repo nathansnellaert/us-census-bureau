@@ -206,7 +206,7 @@ def process_data_fetcher(catalog_data, variables_data):
                 table = pa.Table.from_pylist(dataset_records, schema=schema)
                 
                 # Upload this dataset
-                dataset_name = f"{dataset['dataset_type']}_{dataset['vintage']}"
+                dataset_name = f"us_census_{dataset['dataset_type']}_{dataset['vintage']}"
                 print(f"  Uploading {len(table)} records as {dataset_name}")
                 upload_data(table, dataset_name)
     
