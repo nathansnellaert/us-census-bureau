@@ -6,8 +6,7 @@ os.environ['CONNECTOR_NAME'] = 'us-census-bureau'
 os.environ['RUN_ID'] = 'test-single-fetch'
 os.environ['ENABLE_HTTP_CACHE'] = 'true'
 os.environ['CACHE_REQUESTS'] = 'false'
-os.environ['WRITE_SNAPSHOT'] = 'false'
-os.environ['STORAGE_BACKEND'] = 'local'
+os.environ['CATALOG_TYPE'] = 'local'
 os.environ['DATA_DIR'] = 'data'
 
 from utils.http_client import get
