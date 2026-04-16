@@ -1,0 +1,162 @@
+{
+  "source": "US Census Bureau",
+  "source_url": "https://www.census.gov/data/developers.html",
+  "api_base": "https://api.census.gov/data",
+  "license": "U.S. Government Work (public domain)",
+  "selection": "This connector publishes a curated, exhaustive (within declared scope) slice of the Census Bureau's public JSON API. We cover the programs whose data is widely referenced in economic and demographic analysis and that are available via https://api.census.gov/data.json with stable vintaged endpoints. Programs not exposed on that API (e.g. Building Permits Survey, decennial PUMS microdata, internal-use files) are intentionally excluded.",
+  "refresh_strategy": "On each run we fetch the Census data.json catalog and compute a fingerprint over (identifier, modified) pairs. If the fingerprint matches the prior run, catalog-dependent work short-circuits. Otherwise, each program node enumerates its in-scope (program, vintage) entries, fetches variables.json for labels, pulls the data with chunked requests, and merges the result keyed on (vintage|time, geo_level, state_fips, county_fips, [measure]) so the published asset accumulates across years.",
+  "datasets": {
+    "us_census_catalog": {
+      "id": "us_census_catalog",
+      "title": "US Census Bureau Dataset Registry",
+      "description": "The subset of the Census Bureau's public API catalog (https://api.census.gov/data.json) that this connector ingests, one row per (program, vintage) actually pulled into a published dataset. Use it to see which vintages and endpoints back each us_census_* asset.",
+      "license": "U.S. Government Work (public domain)",
+      "keywords": ["census", "catalog", "registry", "metadata"],
+      "primary_key": ["subset_id", "path", "vintage"],
+      "column_descriptions": {
+        "subset_id": "Published asset this entry contributes to (e.g. us_census_acs)",
+        "program": "Census program code (acs, cbp, pep, saipe, sahie, intltrade, ecnbasic)",
+        "path": "Census API dataset path (c_dataset joined with /)",
+        "vintage": "Catalog vintage year (integer); null for non-vintaged timeseries programs",
+        "title": "Official Census Bureau title for this (path, vintage) entry",
+        "api_endpoint": "Full https URL used to fetch data rows",
+        "variables_link": "URL of the variables.json describing every variable in this entry",
+        "modified": "Census-reported last-modified timestamp for this catalog entry",
+        "identifier": "Stable Census identifier URL for this entry"
+      }
+    },
+    "us_census_acs": {
+      "id": "us_census_acs",
+      "title": "American Community Survey 1-Year Detailed Tables",
+      "description": "Curated slice of the ACS 1-Year Detailed Tables, spanning state and county geographies across every available vintage from 2010 to the latest release. We pull only estimate variables (names ending in 'E', excluding margin-of-error and annotation columns) that belong to one of 20 hand-picked Summary File tables covering age, sex, race, Hispanic origin, educational attainment, household income, poverty, SNAP, employment status, occupation, commute, housing, tenure, and rent. Variables are fetched in chunks of 49 per request to stay under the Census API's 50-variable limit, so no tables are silently truncated. Output is in long format: one row per (vintage, geo_level, state_fips, county_fips, variable).",
+      "license": "U.S. Government Work (public domain)",
+      "keywords": ["acs", "american community survey", "demographics", "income", "housing", "education", "united states", "state", "county"],
+      "primary_key": ["vintage", "geo_level", "state_fips", "county_fips", "variable"],
+      "column_descriptions": {
+        "vintage": "ACS 1-Year vintage (reference year)",
+        "geo_level": "Geography level: 'state' or 'county'",
+        "state_fips": "2-digit FIPS state code",
+        "county_fips": "3-digit FIPS county code within state; empty string for state-level rows",
+        "geography_name": "Human-readable geography name (e.g. 'Baldwin County, Alabama')",
+        "variable": "ACS variable code (e.g. B01001_001E)",
+        "label": "Variable label from the Census variables metadata endpoint",
+        "table_id": "Summary File table group the variable belongs to (e.g. B01001)",
+        "value": "Raw string value returned by the API",
+        "value_numeric": "Numeric parse of value, null where non-numeric or suppressed"
+      }
+    },
+    "us_census_cbp": {
+      "id": "us_census_cbp",
+      "title": "County Business Patterns: State Totals by NAICS",
+      "description": "County Business Patterns at the state level, broken down by NAICS industry code. For each available vintage from 2012 onward we pull establishments, employment, annual payroll, and Q1 payroll across every NAICS sector the API exposes (2-digit through 6-digit). The NAICS dimension version comes from the API's variables.json — NAICS2012 for vintage 2012 and NAICS2017 for vintages 2017-present. Published with vintage, state, and NAICS as a composite key so multiple years coexist in a single table. County-level CBP is intentionally out of scope for this release because the per-county NAICS-detail responses are an order of magnitude larger; that's a follow-up.",
+      "license": "U.S. Government Work (public domain)",
+      "keywords": ["cbp", "county business patterns", "employment", "payroll", "establishments", "naics", "united states", "state"],
+      "primary_key": ["vintage", "state_fips", "naics"],
+      "column_descriptions": {
+        "vintage": "CBP reference year",
+        "state_fips": "2-digit FIPS state code",
+        "geography_name": "Human-readable state name",
+        "naics": "NAICS industry code (string; '00' = all sectors). Code system is whichever NAICS vintage the API uses for that CBP year.",
+        "naics_label": "Human-readable industry description from the API",
+        "emp": "Mid-March employees",
+        "payann": "Annual payroll (thousands of USD)",
+        "estab": "Number of establishments",
+        "payqtr1": "First-quarter payroll (thousands of USD)"
+      }
+    },
+    "us_census_pep": {
+      "id": "us_census_pep",
+      "title": "Population Estimates Program",
+      "description": "Population estimates at state and county level from the Population Estimates Program. We pull from two pep/* sub-endpoints — pep/population (POP, DENSITY and per-year POP_YYYY/DENSITY_YYYY variants) and pep/components (BIRTHS, DEATHS, NATURALINC, DOMESTICMIG, INTERNATIONALMIG, NETMIG and rate variants) — for every vintage from 2015 onward where the API exposes them. Character-breakdown paths (pep/charage, pep/charagegroups, pep/subcty) are excluded because they use different geography hierarchies. The schema of PEP variables changes between vintages (e.g. 2019 has POP/DENSITY; 2021 splits POP into POP_2020/POP_2021), so the output is in long format: one row per (vintage, path, geography, variable). The variable name and human-readable label from the Census variables metadata are preserved, with a numeric parse of the reported value. POPGROUP, AGE, HISP and other dimension/index codes are not emitted as rows — only measurement variables are kept.",
+      "license": "U.S. Government Work (public domain)",
+      "keywords": ["pep", "population estimates", "population", "density", "births", "deaths", "demographics", "united states", "state", "county"],
+      "primary_key": ["vintage", "path", "geo_level", "state_fips", "county_fips", "variable"],
+      "column_descriptions": {
+        "vintage": "PEP vintage year (the release year of the estimate)",
+        "path": "Census API path the data came from (pep/population, pep/components, or pep/housing)",
+        "geo_level": "Geography level: 'state' or 'county'",
+        "state_fips": "2-digit FIPS state code",
+        "county_fips": "3-digit FIPS county code; empty string for state-level rows",
+        "geography_name": "Human-readable geography name",
+        "variable": "PEP variable name (e.g. POP, DENSITY, POP_2021, BIRTHS)",
+        "label": "Variable label from the Census variables metadata endpoint",
+        "value": "Raw string value returned by the API",
+        "value_numeric": "Numeric parse of value; null if non-numeric"
+      }
+    },
+    "us_census_saipe": {
+      "id": "us_census_saipe",
+      "title": "Small Area Income and Poverty Estimates",
+      "description": "Model-based estimates of income and poverty for US states and counties from the SAIPE timeseries API (timeseries/poverty/saipe). We pull every year available from 2005 forward for all poverty-rate and median-household-income measures, at both state and county geographies. Output merges year, geography, and measure into a single long-form table; re-running the connector incrementally picks up the next release.",
+      "license": "U.S. Government Work (public domain)",
+      "keywords": ["saipe", "poverty", "income", "median household income", "united states", "state", "county", "timeseries"],
+      "primary_key": ["year", "geo_level", "state_fips", "county_fips"],
+      "column_descriptions": {
+        "year": "Reference year of the estimate",
+        "geo_level": "Geography level: 'state' or 'county'",
+        "state_fips": "2-digit FIPS state code",
+        "county_fips": "3-digit FIPS county code; empty string for state-level rows",
+        "geography_name": "Human-readable geography name",
+        "saepovall_pt": "Estimated number of people of all ages in poverty",
+        "saepovrtall_pt": "Estimated poverty rate (%) for all ages",
+        "saepov0_17_pt": "Estimated number of people ages 0-17 in poverty",
+        "saepovrt0_17_pt": "Estimated poverty rate (%) for ages 0-17",
+        "saepov5_17r_pt": "Estimated number of people ages 5-17 in families in poverty",
+        "saepovrt5_17r_pt": "Estimated poverty rate (%) for ages 5-17 in families",
+        "saemhi_pt": "Estimated median household income (USD)"
+      }
+    },
+    "us_census_sahie": {
+      "id": "us_census_sahie",
+      "title": "Small Area Health Insurance Estimates",
+      "description": "Model-based estimates of health insurance coverage at state and county level from the SAHIE timeseries API (timeseries/healthins/sahie). We pull every year available from 2008 forward. Output keeps demographic breakdown categories (AGECAT, RACECAT, SEXCAT, IPRCAT) as filter parameters set to the 'all' code so each row is the population total for that geography-year; detailed breakdowns are out of scope for this release.",
+      "license": "U.S. Government Work (public domain)",
+      "keywords": ["sahie", "health insurance", "uninsured", "united states", "state", "county", "timeseries"],
+      "primary_key": ["year", "geo_level", "state_fips", "county_fips"],
+      "column_descriptions": {
+        "year": "Reference year of the estimate",
+        "geo_level": "Geography level: 'state' or 'county'",
+        "state_fips": "2-digit FIPS state code",
+        "county_fips": "3-digit FIPS county code; empty string for state-level rows",
+        "geography_name": "Human-readable geography name",
+        "nic_pt": "Estimated number of insured persons",
+        "nipr_pt": "Estimated total population in the income-to-poverty ratio category",
+        "nui_pt": "Estimated number of uninsured persons",
+        "pctic_pt": "Estimated percent insured",
+        "pctui_pt": "Estimated percent uninsured"
+      }
+    },
+    "us_census_intltrade_annual": {
+      "id": "us_census_intltrade_annual",
+      "title": "US International Trade: Annual Imports and Exports by End-Use",
+      "description": "Annual US international trade totals at the one-digit End-Use commodity level (COMM_LVL=EU1), compiled from the Census monthly timeseries APIs timeseries/intltrade/imports/enduse and timeseries/intltrade/exports/enduse. We query each endpoint at time=YYYY-12 and read the year-to-date columns (GEN_VAL_YR, CON_VAL_YR for imports; ALL_VAL_YR for exports) to obtain full calendar-year totals in a single request per year per flow. Coverage is every full year from 2013 to the latest year for which the Census has published December data. Output is long format keyed on (year, flow, enduse, measure).",
+      "license": "U.S. Government Work (public domain)",
+      "keywords": ["international trade", "imports", "exports", "end-use", "united states", "annual", "timeseries"],
+      "primary_key": ["year", "flow", "enduse", "measure"],
+      "column_descriptions": {
+        "year": "Calendar year",
+        "flow": "Trade flow direction: 'imports' or 'exports'",
+        "enduse": "One-digit End-Use commodity code",
+        "enduse_label": "End-Use commodity description",
+        "measure": "Value measure: 'general_imports' or 'consumption_imports' for imports; 'total_exports' for exports",
+        "value_usd": "Year-to-date value for the measure, in US dollars"
+      }
+    },
+    "us_census_ecnbasic": {
+      "id": "us_census_ecnbasic",
+      "title": "Economic Census: Summary Statistics",
+      "description": "Summary statistics from the US Economic Census (ecnbasic endpoint) for vintages 2017 and 2022, at the national level broken down by NAICS industry. We pull establishment count, employment, annual payroll, and total receipts for every NAICS code the API exposes. The Economic Census runs every five years, so the connector will pick up the 2027 vintage automatically once it lands in the catalog.",
+      "license": "U.S. Government Work (public domain)",
+      "keywords": ["economic census", "naics", "establishments", "payroll", "receipts", "united states"],
+      "primary_key": ["vintage", "naics"],
+      "column_descriptions": {
+        "vintage": "Economic Census reference year (2017, 2022, ...)",
+        "naics": "NAICS industry code (string). The NAICS vintage matches the Census vintage: 2017 uses NAICS2017, 2022 uses NAICS2022.",
+        "estab": "Number of establishments",
+        "emp": "Employees",
+        "payann": "Annual payroll (thousands of USD)",
+        "rcptot": "Total receipts / revenue (thousands of USD)"
+      }
+    }
+  }
+}

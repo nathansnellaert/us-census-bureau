@@ -4,43 +4,40 @@ from datetime import datetime
 
 CURRENT_YEAR = datetime.now().year
 
-# Priority dataset patterns we want to collect
-PRIORITY_DATASETS = {
-    'acs': {'name': 'American Community Survey', 'min_year': 2010, 'max_year': CURRENT_YEAR - 1, 'priority': 1},
-    'cbp': {'name': 'County Business Patterns', 'min_year': 2010, 'priority': 1},
-    'pep': {'name': 'Population Estimates Program', 'min_year': 2010, 'priority': 1},
-    'zbp': {'name': 'ZIP Business Patterns', 'min_year': 2010, 'priority': 2},
-    'ase': {'name': 'Annual Survey of Entrepreneurs', 'min_year': 2014, 'priority': 2},
-    'abscs': {'name': 'Annual Business Survey', 'min_year': 2017, 'priority': 2},
-    'bdstimeseries': {'name': 'Business Dynamics Statistics', 'min_year': 2010, 'priority': 2},
-    'intltrade': {'name': 'International Trade', 'min_year': 2013, 'priority': 1},
-    'sahie': {'name': 'Small Area Health Insurance Estimates', 'min_year': 2010, 'priority': 2},
-    'saipe': {'name': 'Small Area Income and Poverty Estimates', 'min_year': 2010, 'priority': 1},
-    'ecnbasic': {'name': 'Economic Census', 'min_year': 2017, 'priority': 1},
-    'bps': {'name': 'Building Permits Survey', 'min_year': 2010, 'priority': 1}
-}
-
-# Priority variable patterns by dataset type
-PRIORITY_VARIABLES = {
-    'acs': {
-        'B01001': 'Sex by Age', 'B02001': 'Race', 'B03001': 'Hispanic Origin',
-        'B19013': 'Median Household Income', 'B19001': 'Household Income',
-        'B17001': 'Poverty Status', 'B22001': 'SNAP', 'B25001': 'Housing Units',
-        'B25077': 'Median Home Value', 'B25003': 'Tenure', 'B25061': 'Rent',
-        'B23025': 'Employment Status', 'B24010': 'Occupation',
-        'B08301': 'Commute Mode', 'B08303': 'Commute Time',
-        'B15003': 'Educational Attainment', 'B14001': 'School Enrollment'
-    },
-    'cbp': {'EMP': 'Employees', 'PAYANN': 'Annual Payroll', 'ESTAB': 'Establishments', 'EMPSZES': 'Employment Size', 'PAYQTR1': 'Q1 Payroll'},
-    'pep': {'POP': 'Population', 'DENSITY': 'Density', 'BIRTHS': 'Births', 'DEATHS': 'Deaths', 'NATURALINC': 'Natural Increase'},
-    'saipe': {'SAEPOVRTALL_PT': 'Poverty Rate', 'SAEPOVRT0_17_PT': 'Child Poverty Rate', 'SAEMHI_PT': 'Median Income'},
-    'sahie': {'NIC_PT': 'Insured Count', 'NIPR_PT': 'Insured Rate', 'NUI_PT': 'Uninsured Count'},
-    'intltrade': {'IMPVAL': 'Import Value', 'EXPVAL': 'Export Value', 'BALANCE': 'Trade Balance'},
-}
+LICENSE = "U.S. Government Work (public domain)"
+SOURCE_URL = "https://www.census.gov/data/developers.html"
+CATALOG_URL = "https://api.census.gov/data.json"
 
 GEOGRAPHY_LEVELS = {
-    'state': 'state:*',
-    'county': 'county:*',
+    "state": ("state:*", None),
+    "county": ("county:*", "state:*"),
 }
 
-MAX_VARS_PER_REQUEST = 49  # Census API allows 50 total, but NAME is always included
+NON_DATA_VARS = {"for", "in", "ucgid", "NAME", "GEO_ID", "time"}
+
+ACS_TABLE_PREFIXES = [
+    "B01001", "B01002", "B02001", "B03001", "B03002",
+    "B15003", "B14001",
+    "B17001", "B19001", "B19013", "B22001",
+    "B23025", "B24010", "B08301", "B08303",
+    "B25001", "B25002", "B25003", "B25061", "B25077",
+]
+
+PEP_POPULATION_MEASURES = ["POP", "DENSITY"]
+PEP_COMPONENTS_MEASURES = ["BIRTHS", "DEATHS", "NATURALCHG", "NETMIG", "RBIRTH", "RDEATH", "RNATURALCHG", "RNETMIG"]
+
+CBP_MEASURES = ["EMP", "PAYANN", "ESTAB", "PAYQTR1"]
+
+SAIPE_MEASURES = [
+    "SAEPOVALL_PT", "SAEPOVRTALL_PT",
+    "SAEPOV0_17_PT", "SAEPOVRT0_17_PT",
+    "SAEPOV5_17R_PT", "SAEPOVRT5_17R_PT",
+    "SAEMHI_PT",
+]
+
+SAHIE_MEASURES = ["NIC_PT", "NIPR_PT", "NUI_PT", "PCTIC_PT", "PCTUI_PT"]
+
+INTLTRADE_MEASURES = ["GEN_VAL_MO", "CON_VAL_MO"]
+
+ECNBASIC_MEASURES = ["ESTAB", "EMP", "PAYANN", "RCPTOT"]
+ECNBASIC_VINTAGES = [2017, 2022]

@@ -5,6 +5,8 @@ description = "US Census Bureau data connector"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "s3fs>=2024.0",
+    "fsspec>=2024.0",
     "psutil>=5.9.0",
     "httpx>=0.27.0",
     "pyarrow>=17.0.0",
