@@ -2,9 +2,9 @@
 
 from datetime import datetime
 import pyarrow as pa
-from subsets_utils import save_raw_parquet, load_raw_parquet, raw_asset_exists, merge, publish, get
+from subsets_utils import save_raw_parquet, load_raw_parquet, raw_asset_exists, merge, publish, validate, get
 
-from census_utils import load_metadata
+from census_utils import load_metadata, parse_numeric
 
 SUBSET_ID = "us_census_intltrade_annual"
 METADATA = load_metadata(SUBSET_ID)
@@ -79,12 +79,6 @@ def _to_long(wide: pa.Table, flow: str, year: int) -> pa.Table:
             "total_exports": wide.column("ALL_VAL_YR").to_pylist() if "ALL_VAL_YR" in cols else [None] * wide.num_rows,
         }
 
-    def _num(v):
-        try:
-            return float(v) if v not in (None, "", "null", "N/A", "-", "*") else None
-        except (TypeError, ValueError):
-            return None
-
     rows = []
     for measure_name, vals in measures.items():
         for i, raw_val in enumerate(vals):
@@ -94,7 +88,7 @@ def _to_long(wide: pa.Table, flow: str, year: int) -> pa.Table:
                 "enduse": enduse_col[i],
                 "enduse_label": label_col[i],
                 "measure": measure_name,
-                "value_usd": _num(raw_val),
+                "value_usd": parse_numeric(raw_val),
             })
 
     schema = pa.schema([
@@ -125,6 +119,12 @@ def transform():
 
     out = pa.concat_tables(frames, promote_options="default")
     print(f"[{SUBSET_ID}] merging {out.num_rows:,} rows")
+
+    validate(out, {
+        "not_null": ["year", "flow", "enduse", "measure"],
+        "min_rows": 50,
+    })
+
     merge(out, SUBSET_ID, key=["year", "flow", "enduse", "measure"])
     publish(SUBSET_ID, METADATA)
 

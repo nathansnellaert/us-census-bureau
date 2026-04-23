@@ -41,3 +41,15 @@ INTLTRADE_MEASURES = ["GEN_VAL_MO", "CON_VAL_MO"]
 
 ECNBASIC_MEASURES = ["ESTAB", "EMP", "PAYANN", "RCPTOT"]
 ECNBASIC_VINTAGES = [2017, 2022]
+
+
+def parse_numeric(v):
+    """Parse a Census API value to float, returning None for suppressed/missing values.
+
+    Census API uses various sentinel values for suppressed or unavailable data:
+    None, '', 'null', 'N/A', '-', '*'. This function normalizes all of them to None.
+    """
+    try:
+        return float(v) if v not in (None, "", "null", "N/A", "-", "*") else None
+    except (TypeError, ValueError):
+        return None

@@ -1,7 +1,7 @@
 """Population Estimates Program — long-form, multi-vintage, multi-path."""
 
 import pyarrow as pa
-from subsets_utils import save_raw_parquet, load_raw_parquet, raw_asset_exists, merge, publish
+from subsets_utils import save_raw_parquet, load_raw_parquet, raw_asset_exists, merge, publish, validate
 
 from census_utils import (
     load_catalog,
@@ -153,6 +153,12 @@ def transform():
 
     out = pa.concat_tables(frames, promote_options="default")
     print(f"[{SUBSET_ID}] merging {out.num_rows:,} rows")
+
+    validate(out, {
+        "not_null": ["vintage", "path", "geo_level", "state_fips", "variable"],
+        "min_rows": 100,
+    })
+
     merge(out, SUBSET_ID, key=["vintage", "path", "geo_level", "state_fips", "county_fips", "variable"])
     publish(SUBSET_ID, METADATA)
 

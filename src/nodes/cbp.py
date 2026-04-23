@@ -7,7 +7,7 @@ runs in minutes instead of hours. County-level CBP is a follow-up.
 """
 
 import pyarrow as pa
-from subsets_utils import save_raw_parquet, load_raw_parquet, raw_asset_exists, merge, publish
+from subsets_utils import save_raw_parquet, load_raw_parquet, raw_asset_exists, merge, publish, validate
 
 from census_utils import (
     load_catalog,
@@ -16,6 +16,7 @@ from census_utils import (
     CBP_MEASURES,
     PROGRAMS,
     load_metadata,
+    parse_numeric,
 )
 
 # All state FIPS codes (50 + DC). PR is excluded because CBP coverage is uneven.
@@ -100,12 +101,6 @@ def _normalize(wide: pa.Table, vintage: int, geo_level: str) -> pa.Table:
 
     measures = {m: wide.column(m).to_pylist() if m in cols else [None] * wide.num_rows for m in CBP_MEASURES}
 
-    def _num(v):
-        try:
-            return float(v) if v not in (None, "", "null", "N/A", "-", "*") else None
-        except (TypeError, ValueError):
-            return None
-
     rows = []
     for i in range(wide.num_rows):
         rows.append({
@@ -114,10 +109,10 @@ def _normalize(wide: pa.Table, vintage: int, geo_level: str) -> pa.Table:
             "geography_name": name_col[i],
             "naics": naics_vals[i],
             "naics_label": naics_labels[i],
-            "emp": _num(measures["EMP"][i]),
-            "payann": _num(measures["PAYANN"][i]),
-            "estab": _num(measures["ESTAB"][i]),
-            "payqtr1": _num(measures["PAYQTR1"][i]),
+            "emp": parse_numeric(measures["EMP"][i]),
+            "payann": parse_numeric(measures["PAYANN"][i]),
+            "estab": parse_numeric(measures["ESTAB"][i]),
+            "payqtr1": parse_numeric(measures["PAYQTR1"][i]),
         })
 
     schema = pa.schema([
@@ -152,6 +147,12 @@ def transform():
 
     out = pa.concat_tables(frames, promote_options="default")
     print(f"[{SUBSET_ID}] merging {out.num_rows:,} rows")
+
+    validate(out, {
+        "not_null": ["vintage", "state_fips", "naics"],
+        "min_rows": 100,
+    })
+
     merge(out, SUBSET_ID, key=["vintage", "state_fips", "naics"])
     publish(SUBSET_ID, METADATA)
 

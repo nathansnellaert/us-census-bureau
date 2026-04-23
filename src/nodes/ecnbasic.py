@@ -1,7 +1,7 @@
 """Economic Census basic summary statistics — vintages 2017 and 2022, US national."""
 
 import pyarrow as pa
-from subsets_utils import save_raw_parquet, load_raw_parquet, raw_asset_exists, merge, publish, get
+from subsets_utils import save_raw_parquet, load_raw_parquet, raw_asset_exists, merge, publish, validate, get
 
 from census_utils import (
     load_catalog,
@@ -9,6 +9,7 @@ from census_utils import (
     ECNBASIC_MEASURES,
     PROGRAMS,
     load_metadata,
+    parse_numeric,
 )
 
 SUBSET_ID = "us_census_ecnbasic"
@@ -87,12 +88,6 @@ def _normalize(wide: pa.Table, vintage: int) -> pa.Table:
 
     naics_vals = wide.column(naics_col).to_pylist()
 
-    def _num(v):
-        try:
-            return float(v) if v not in (None, "", "null", "N/A", "-", "*") else None
-        except (TypeError, ValueError):
-            return None
-
     measures = {m: wide.column(m).to_pylist() if m in cols else [None] * wide.num_rows for m in ECNBASIC_MEASURES}
 
     rows = []
@@ -100,10 +95,10 @@ def _normalize(wide: pa.Table, vintage: int) -> pa.Table:
         rows.append({
             "vintage": vintage,
             "naics": naics_vals[i],
-            "estab": _num(measures["ESTAB"][i]),
-            "emp": _num(measures["EMP"][i]),
-            "payann": _num(measures["PAYANN"][i]),
-            "rcptot": _num(measures["RCPTOT"][i]),
+            "estab": parse_numeric(measures["ESTAB"][i]),
+            "emp": parse_numeric(measures["EMP"][i]),
+            "payann": parse_numeric(measures["PAYANN"][i]),
+            "rcptot": parse_numeric(measures["RCPTOT"][i]),
         })
 
     schema = pa.schema([
@@ -135,6 +130,12 @@ def transform():
 
     out = pa.concat_tables(frames, promote_options="default")
     print(f"[{SUBSET_ID}] merging {out.num_rows:,} rows")
+
+    validate(out, {
+        "not_null": ["vintage", "naics"],
+        "min_rows": 10,
+    })
+
     merge(out, SUBSET_ID, key=["vintage", "naics"])
     publish(SUBSET_ID, METADATA)
 

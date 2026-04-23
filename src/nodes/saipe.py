@@ -2,13 +2,14 @@
 
 from datetime import datetime
 import pyarrow as pa
-from subsets_utils import save_raw_parquet, load_raw_parquet, raw_asset_exists, merge, publish
+from subsets_utils import save_raw_parquet, load_raw_parquet, raw_asset_exists, merge, publish, validate
 
 from census_utils import (
     fetch_rows,
     GEOGRAPHY_LEVELS,
     SAIPE_MEASURES,
     load_metadata,
+    parse_numeric,
 )
 
 SUBSET_ID = "us_census_saipe"
@@ -52,15 +53,9 @@ def _normalize(wide: pa.Table, year: int, geo_level: str) -> pa.Table:
     state_col = [s or "" for s in (wide.column("state").to_pylist() if "state" in cols else [""] * wide.num_rows)]
     county_col = [c or "" for c in (wide.column("county").to_pylist() if "county" in cols else [""] * wide.num_rows)]
 
-    def _num(v):
-        try:
-            return float(v) if v not in (None, "", "null", "N/A", "-", "*") else None
-        except (TypeError, ValueError):
-            return None
-
     def measure(name):
         if name in cols:
-            return [_num(v) for v in wide.column(name).to_pylist()]
+            return [parse_numeric(v) for v in wide.column(name).to_pylist()]
         return [None] * wide.num_rows
 
     rows = []
@@ -102,6 +97,12 @@ def transform():
 
     out = pa.concat_tables(frames, promote_options="default")
     print(f"[{SUBSET_ID}] merging {out.num_rows:,} rows")
+
+    validate(out, {
+        "not_null": ["year", "geo_level", "state_fips", "geography_name"],
+        "min_rows": 100,
+    })
+
     merge(out, SUBSET_ID, key=["year", "geo_level", "state_fips", "county_fips"])
     publish(SUBSET_ID, METADATA)
 

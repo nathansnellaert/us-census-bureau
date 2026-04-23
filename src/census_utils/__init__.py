@@ -16,6 +16,7 @@ from .constants import (
     INTLTRADE_MEASURES,
     ECNBASIC_MEASURES,
     ECNBASIC_VINTAGES,
+    parse_numeric,
 )
 from .catalog import (
     load_catalog,
